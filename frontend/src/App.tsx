@@ -83,7 +83,7 @@ function App() {
     setToast({ type: 'success', message: 'You have been signed out.' })
   }
 
-  if (!auth) return <Login onAuthenticated={setAuth} onToast={setToast} />
+  if (!auth) return <Login onAuthenticated={setAuth} />
 
   const isAdmin = auth.roles.includes('Admin')
   const isOrganizer = auth.roles.includes('Organizer')
@@ -132,13 +132,15 @@ function NavItem({ icon, label, active, onClick }: { icon: ReactNode; label: str
   return <button className={`nav-item ${active === label ? 'active' : ''}`} onClick={() => onClick(label)}>{icon}<span>{label}</span>{active === label && <i />}</button>
 }
 
-function Login({ onAuthenticated, onToast }: { onAuthenticated: (auth: AuthResponse) => void; onToast: (toast: { type: 'success' | 'error'; message: string }) => void }) {
+function Login({ onAuthenticated }: { onAuthenticated: (auth: AuthResponse) => void }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [loginError, setLoginError] = useState<string | null>(null)
   const submit = async (event: FormEvent) => {
     event.preventDefault()
-    if (!username.trim() || !password) return onToast({ type: 'error', message: 'Enter your username and password.' })
+    setLoginError(null)
+    if (!username.trim() || !password) return setLoginError('Enter your username and password.')
     setLoading(true)
     try {
       const { data } = await api.post<AuthResponse>('/auth/login', { userName: username.trim(), password })
@@ -146,11 +148,14 @@ function Login({ onAuthenticated, onToast }: { onAuthenticated: (auth: AuthRespo
       localStorage.setItem('tournois.auth', JSON.stringify(data))
       onAuthenticated(data)
     } catch (error) {
-      if (axios.isAxiosError(error) && error.response?.status === 401) onToast({ type: 'error', message: 'Invalid credentials. Please try again.' })
-      else onToast({ type: 'error', message: 'The API is unavailable. Check that the backend is running.' })
+      if (axios.isAxiosError(error) && error.response?.status === 401) setLoginError('Invalid username or password.')
+      else {
+        const message = axios.isAxiosError(error) ? String(error.response?.data?.detail ?? 'The API is unavailable. Check that the backend is running.') : 'The API is unavailable. Check that the backend is running.'
+        setLoginError(message)
+      }
     } finally { setLoading(false) }
   }
-  return <div className="login-page"><div className="login-art"><div className="art-glow" /><div className="login-brand"><div className="brand-mark"><Swords size={21} /></div><strong>ARENA<span>HQ</span></strong></div><div className="art-copy"><p className="eyebrow">COMPETE. CONNECT. CONQUER.</p><h1>Your arena.<br /><em>Your legacy.</em></h1><p>One command center for every tournament, team, and match.</p></div><div className="art-stat"><Trophy size={18} /><span><strong>1,248</strong> matches managed this season</span></div></div><div className="login-panel"><div className="login-form"><div className="mobile-login-logo"><div className="brand-mark"><Swords size={21} /></div><strong>ARENA<span>HQ</span></strong></div><p className="eyebrow">WELCOME BACK</p><h2>Sign in to your workspace</h2><p className="muted">Manage your tournaments with confidence.</p><form onSubmit={submit}><label>Username<input value={username} onChange={(event) => setUsername(event.target.value)} placeholder="Enter your username" autoComplete="username" /></label><label>Password<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} placeholder="Enter your password" autoComplete="current-password" /></label><button className="primary-button full-width" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}<ChevronRight size={17} /></button></form><p className="login-hint">Need an account? <span>Ask your administrator</span></p></div></div></div>
+  return <div className="login-page"><div className="login-art"><div className="art-glow" /><div className="login-brand"><div className="brand-mark"><Swords size={21} /></div><strong>ARENA<span>HQ</span></strong></div><div className="art-copy"><p className="eyebrow">COMPETE. CONNECT. CONQUER.</p><h1>Your arena.<br /><em>Your legacy.</em></h1><p>One command center for every tournament, team, and match.</p></div><div className="art-stat"><Trophy size={18} /><span><strong>1,248</strong> matches managed this season</span></div></div><div className="login-panel"><div className="login-form"><div className="mobile-login-logo"><div className="brand-mark"><Swords size={21} /></div><strong>ARENA<span>HQ</span></strong></div><p className="eyebrow">WELCOME BACK</p><h2>Sign in to your workspace</h2><p className="muted">Manage your tournaments with confidence.</p>{loginError && <p className="login-error" role="alert">{loginError}</p>}<form onSubmit={submit}><label>Username<input value={username} onChange={(event) => { setUsername(event.target.value); setLoginError(null) }} placeholder="Enter your username" autoComplete="username" /></label><label>Password<input type="password" value={password} onChange={(event) => { setPassword(event.target.value); setLoginError(null) }} placeholder="Enter your password" autoComplete="current-password" /></label><button className="primary-button full-width" disabled={loading}>{loading ? 'Signing in…' : 'Sign in'}<ChevronRight size={17} /></button></form><p className="login-hint">Need an account? <span>Ask your administrator</span></p></div></div></div>
 }
 
 function Dashboard({ onToast, onNavigate, onCreateTournament, canCreateTournament, playerOnly, roleLabel }: { onToast: (toast: { type: 'success' | 'error'; message: string }) => void; onNavigate: (label: string) => void; onCreateTournament: () => void; canCreateTournament: boolean; playerOnly: boolean; roleLabel: string }) {
@@ -188,6 +193,7 @@ function ResourcePage({ resource, onToast, onCreateTournament, canCreateTourname
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState<{ id: number; name: string; description?: string } | null>(null)
   const [formOpen, setFormOpen] = useState(false)
+  const [matchFormOpen, setMatchFormOpen] = useState(false)
   const endpoint = resource === 'Tournaments' ? 'tournaments' : resource === 'Matches' ? (playerOnly ? 'matches/results' : 'matches') : resource === 'Games' ? 'games' : 'teams'
   const canEdit = canCreateTournament && (resource === 'Games' || resource === 'Teams & Players')
   const load = useCallback(async () => {
@@ -219,7 +225,7 @@ function ResourcePage({ resource, onToast, onCreateTournament, canCreateTourname
       onToast({ type: 'error', message })
     }
   }
-  return <div className="page"><div className="page-heading"><div><p className="eyebrow">WORKSPACE / {resource.toUpperCase()}</p><h1>{title}</h1><p className="muted">Manage your {resource.toLowerCase()} from one place.</p></div>{resource === 'Tournaments' && canCreateTournament && <button className="primary-button" onClick={onCreateTournament}><span>+</span> Create tournament</button>}{canEdit && <button className="primary-button" onClick={createResource}><span>+</span> Add {resource === 'Games' ? 'game' : 'team'}</button>}</div><section className="panel resource-panel">{loading ? <EmptyState label="Loading data…" /> : items.length === 0 ? <EmptyState label={`No ${resource.toLowerCase()} found.`} /> : <div className="resource-list">{items.map((item, index) => <div className="resource-row" key={String(item.id ?? index)}><div className="game-icon game-0"><Gamepad2 size={16} /></div><div><strong>{String(item.name ?? item.gamertag ?? `${item.teamAName ?? 'Team A'} vs ${item.teamBName ?? 'Team B'}`)}</strong><small>{resource === 'Tournaments' && item.startDate ? `${formatDate(String(item.startDate))} – ${formatDate(String(item.endDate))}` : resource === 'Games' ? String(item.description ?? 'Game catalog entry') : `ID #${String(item.id)}`}</small></div><span className="resource-id">#{String(item.id)}</span>{canEdit && <div className="resource-actions"><button className="text-button" onClick={() => editResource(item)}>Edit</button><button className="danger-button" onClick={() => void deleteResource(item)}>Delete</button></div>}</div>)}</div>}</section>{formOpen && <ResourceForm resource={resource} item={editing} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); setLoading(true); void load() }} onToast={onToast} />}</div>
+  return <div className="page"><div className="page-heading"><div><p className="eyebrow">WORKSPACE / {resource.toUpperCase()}</p><h1>{title}</h1><p className="muted">Manage your {resource.toLowerCase()} from one place.</p></div>{resource === 'Tournaments' && canCreateTournament && <button className="primary-button" onClick={onCreateTournament}><span>+</span> Create tournament</button>}{resource === 'Matches' && canCreateTournament && <button className="primary-button" onClick={() => setMatchFormOpen(true)}><span>+</span> Add match</button>}{canEdit && <button className="primary-button" onClick={createResource}><span>+</span> Add {resource === 'Games' ? 'game' : 'team'}</button>}</div><section className="panel resource-panel">{loading ? <EmptyState label="Loading data…" /> : items.length === 0 ? <EmptyState label={`No ${resource.toLowerCase()} found.`} /> : <div className="resource-list">{items.map((item, index) => <div className="resource-row" key={String(item.id ?? index)}><div className="game-icon game-0"><Gamepad2 size={16} /></div><div><strong>{String(item.name ?? item.gamertag ?? `${item.teamAName ?? 'Team A'} vs ${item.teamBName ?? 'Team B'}`)}</strong><small>{resource === 'Tournaments' && item.startDate ? `${formatDate(String(item.startDate))} – ${formatDate(String(item.endDate))}` : resource === 'Games' ? String(item.description ?? 'Game catalog entry') : resource === 'Matches' ? `Scheduled ${formatDate(String(item.scheduledAt))}` : `ID #${String(item.id)}`}</small></div><span className="resource-id">#{String(item.id)}</span>{canEdit && <div className="resource-actions"><button className="text-button" onClick={() => editResource(item)}>Edit</button><button className="danger-button" onClick={() => void deleteResource(item)}>Delete</button></div>}</div>)}</div>}</section>{formOpen && <ResourceForm resource={resource} item={editing} onClose={() => setFormOpen(false)} onSaved={() => { setFormOpen(false); setLoading(true); void load() }} onToast={onToast} />}{matchFormOpen && <MatchForm onClose={() => setMatchFormOpen(false)} onSaved={() => { setMatchFormOpen(false); setLoading(true); void load() }} onToast={onToast} />}</div>
 }
 
 function ResourceForm({ resource, item, onClose, onSaved, onToast }: { resource: string; item: { id: number; name: string; description?: string } | null; onClose: () => void; onSaved: () => void; onToast: (toast: { type: 'success' | 'error'; message: string }) => void }) {
@@ -243,7 +249,56 @@ function ResourceForm({ resource, item, onClose, onSaved, onToast }: { resource:
       onToast({ type: 'error', message })
     } finally { setSaving(false) }
   }
+
   return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="resource-form-title"><div className="panel-heading"><div><p className="eyebrow">{item ? `EDIT ${label.toUpperCase()}` : `NEW ${label.toUpperCase()}`}</p><h3 id="resource-form-title">{item ? `Edit ${label}` : `Add ${label}`}</h3></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={18} /></button></div><form className="modal-form" onSubmit={submit}><label>Name<input value={name} onChange={(event) => setName(event.target.value)} /></label>{isGame && <label>Description<textarea value={description} onChange={(event) => setDescription(event.target.value)} rows={4} /></label>}<div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? 'Saving…' : item ? 'Save changes' : `Create ${label}`}</button></div></form></section></div>
+}
+
+function MatchForm({ onClose, onSaved, onToast }: { onClose: () => void; onSaved: () => void; onToast: (toast: { type: 'success' | 'error'; message: string }) => void }) {
+  const [tournaments, setTournaments] = useState<Array<{ id: number; name: string }>>([])
+  const [teams, setTeams] = useState<Array<{ id: number; name: string }>>([])
+  const [tournamentId, setTournamentId] = useState('')
+  const [teamAId, setTeamAId] = useState('')
+  const [teamBId, setTeamBId] = useState('')
+  const [scheduledAt, setScheduledAt] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    const loadOptions = async () => {
+      try {
+        const [tournamentsResponse, teamsResponse] = await Promise.all([
+          api.get<Paged<{ id: number; name: string }>>('/tournaments?page=1&pageSize=100'),
+          api.get<Paged<{ id: number; name: string }>>('/teams?page=1&pageSize=100'),
+        ])
+        setTournaments(tournamentsResponse.data.items)
+        setTeams(teamsResponse.data.items)
+      } catch {
+        onToast({ type: 'error', message: 'Tournament and team options could not be loaded.' })
+      }
+    }
+    void loadOptions()
+  }, [onToast])
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault()
+    if (!tournamentId || !teamAId || !teamBId || !scheduledAt) return onToast({ type: 'error', message: 'Complete all match fields.' })
+    if (teamAId === teamBId) return onToast({ type: 'error', message: 'A team cannot play against itself.' })
+    setSaving(true)
+    try {
+      await api.post('/matches', {
+        tournamentId: Number(tournamentId),
+        teamAId: Number(teamAId),
+        teamBId: Number(teamBId),
+        scheduledAt: new Date(scheduledAt).toISOString(),
+      })
+      onToast({ type: 'success', message: 'Match created successfully.' })
+      onSaved()
+    } catch (error) {
+      const message = axios.isAxiosError(error) ? String(error.response?.data?.detail ?? 'Match could not be created.') : 'Match could not be created.'
+      onToast({ type: 'error', message })
+    } finally { setSaving(false) }
+  }
+
+  return <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose() }}><section className="modal" role="dialog" aria-modal="true" aria-labelledby="match-form-title"><div className="panel-heading"><div><p className="eyebrow">NEW MATCH</p><h3 id="match-form-title">Add match</h3></div><button className="icon-button" onClick={onClose} aria-label="Close"><X size={18} /></button></div><form className="modal-form" onSubmit={submit}><label>Tournament<select value={tournamentId} onChange={(event) => setTournamentId(event.target.value)}><option value="">Select a tournament</option>{tournaments.map((tournament) => <option value={tournament.id} key={tournament.id}>{tournament.name}</option>)}</select></label><div className="date-fields"><label>Team A<select value={teamAId} onChange={(event) => setTeamAId(event.target.value)}><option value="">Select team</option>{teams.map((team) => <option value={team.id} key={team.id}>{team.name}</option>)}</select></label><label>Team B<select value={teamBId} onChange={(event) => setTeamBId(event.target.value)}><option value="">Select team</option>{teams.map((team) => <option value={team.id} key={team.id}>{team.name}</option>)}</select></label></div><label>Scheduled date<input type="datetime-local" value={scheduledAt} onChange={(event) => setScheduledAt(event.target.value)} /></label><div className="modal-actions"><button type="button" className="secondary-button" onClick={onClose}>Cancel</button><button className="primary-button" disabled={saving}>{saving ? 'Creating…' : 'Create match'}</button></div></form></section></div>
 }
 
 function UserManagementPage({ onToast }: { onToast: (toast: { type: 'success' | 'error'; message: string }) => void }) {
