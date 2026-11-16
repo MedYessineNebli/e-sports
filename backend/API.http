@@ -1,0 +1,85 @@
+@baseUrl = https://localhost:7007
+@token = replace-with-jwt
+
+### Register a player account
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "player@example.com",
+  "userName": "player",
+  "password": "PlayerPassword123!",
+  "confirmPassword": "PlayerPassword123!"
+}
+
+### Login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "userName": "player",
+  "password": "PlayerPassword123!"
+}
+
+### List games
+GET {{baseUrl}}/api/games?page=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### List users (Admin)
+GET {{baseUrl}}/api/users
+Authorization: Bearer {{token}}
+
+### Get a user (Admin)
+GET {{baseUrl}}/api/users/user-id
+Authorization: Bearer {{token}}
+
+### Create a user (Admin)
+POST {{baseUrl}}/api/users
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "userName": "new-player",
+  "email": "new-player@example.com",
+  "password": "PlayerPassword123!",
+  "roleName": "Player"
+}
+
+### Update a user (Admin)
+PUT {{baseUrl}}/api/users/user-id
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "userName": "updated-player",
+  "email": "updated-player@example.com",
+  "roleName": "Organizer"
+}
+
+### Delete a user (Admin)
+DELETE {{baseUrl}}/api/users/user-id
+Authorization: Bearer {{token}}
+
+### Get a game
+GET {{baseUrl}}/api/games/1
+Authorization: Bearer {{token}}
+
+### List teams
+GET {{baseUrl}}/api/teams?page=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### List tournament registrations
+GET {{baseUrl}}/api/tournament-registrations?page=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### List tournament matches
+GET {{baseUrl}}/api/tournaments/1/matches?page=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### Tournament standings
+GET {{baseUrl}}/api/tournaments/1/standings
+Authorization: Bearer {{token}}
+
+### Get a missing tournament
+GET {{baseUrl}}/api/tournaments/999999
+Authorization: Bearer {{token}}

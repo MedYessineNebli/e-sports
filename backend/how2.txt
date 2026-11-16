@@ -1,0 +1,13 @@
+dotnet ef migrations add InitialCreate
+
+dotnet ef database update
+
+
+Username: admin@example.com
+Password: MotDePasseAdmin123!
+
+
+set "AdminSeed__Email=admin@example.com"
+set "AdminSeed__Password=MotDePasseAdminFort123!"
+
+dotnet run --launch-profile http
