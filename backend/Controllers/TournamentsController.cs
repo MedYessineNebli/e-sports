@@ -94,7 +94,16 @@ public sealed class TournamentsController(
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken) =>
-        await service.DeleteAsync(id, cancellationToken) ? NoContent() : NotFound();
+    [Authorize(Roles = "Admin,Organizer")]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await service.DeleteAsync(id, cancellationToken) ? NoContent() : NotFound();
+        }
+        catch (InvalidOperationException exception)
+        {
+            return Conflict(new ProblemDetails { Title = "Tournament cannot be deleted", Detail = exception.Message, Status = 409 });
+        }
+    }
 }

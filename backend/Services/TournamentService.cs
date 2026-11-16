@@ -105,9 +105,11 @@ public sealed class TournamentService(IUnitOfWork unitOfWork) : ITournamentServi
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken)
     {
-        var tournament = await unitOfWork.Tournaments.GetByIdAsync(id, cancellationToken: cancellationToken);
+        var tournament = await unitOfWork.Tournaments.GetByIdAsync(id, true, true, cancellationToken);
         if (tournament is null)
             return false;
+        if (tournament.TournamentRegistrations.Count > 0 || tournament.Matches.Count > 0)
+            throw new InvalidOperationException("Ce tournoi ne peut pas être supprimé car il possède des inscriptions ou des matchs.");
         unitOfWork.Tournaments.Delete(tournament);
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return true;
