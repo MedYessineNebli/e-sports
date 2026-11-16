@@ -31,6 +31,19 @@ public sealed class MatchRepository(ApplicationContext context) : IMatchReposito
             .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
     }
 
+    public async Task<IReadOnlyList<Match>> GetCompletedPagedAsync(int page, int pageSize, int? tournamentId = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Match> query = context.Matches.AsNoTracking()
+            .Include(match => match.TeamA)
+            .Include(match => match.TeamB)
+            .Include(match => match.WinnerTeam)
+            .Where(match => match.PlayedAt != null);
+        if (tournamentId.HasValue)
+            query = query.Where(match => match.TournamentId == tournamentId.Value);
+        return await query.OrderByDescending(match => match.PlayedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+    }
+
     public async Task<IReadOnlyList<Match>> GetCompletedByTournamentAsync(int tournamentId, CancellationToken cancellationToken = default) =>
         await context.Matches.AsNoTracking()
             .Include(match => match.TeamA)
@@ -42,6 +55,14 @@ public sealed class MatchRepository(ApplicationContext context) : IMatchReposito
     public Task<int> CountAsync(int? tournamentId = null, CancellationToken cancellationToken = default)
     {
         IQueryable<Match> query = context.Matches;
+        if (tournamentId.HasValue)
+            query = query.Where(match => match.TournamentId == tournamentId.Value);
+        return query.CountAsync(cancellationToken);
+    }
+
+    public Task<int> CountCompletedAsync(int? tournamentId = null, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Match> query = context.Matches.Where(match => match.PlayedAt != null);
         if (tournamentId.HasValue)
             query = query.Where(match => match.TournamentId == tournamentId.Value);
         return query.CountAsync(cancellationToken);

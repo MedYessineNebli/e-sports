@@ -116,6 +116,9 @@ npm run preview
 | `DELETE` | `/api/users/{id}` | Admin |
 | `GET` | `/api/roles` | Admin |
 
+Les endpoints de listes utilisent `page` et `pageSize` et retournent
+`totalCount` et `totalPages`.
+
 Un fichier de requêtes est disponible dans
 [`backend/API.http`](./backend/API.http).
 

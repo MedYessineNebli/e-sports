@@ -26,7 +26,7 @@ public sealed class TournamentRegistrationsController(ITournamentRegistrationSer
     }
 
     [HttpPost]
-    [Authorize(Roles = "Admin,Organizer,Player")]
+    [Authorize(Roles = "Admin,Organizer")]
     public async Task<ActionResult<RegistrationResponseDto>> Create(CreateRegistrationDto dto, CancellationToken cancellationToken)
     {
         try

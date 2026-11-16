@@ -3,6 +3,7 @@ using API.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace API.Controllers;
 
@@ -14,8 +15,25 @@ public sealed class RolesController(
     UserManager<ApplicationUser> userManager) : ControllerBase
 {
     [HttpGet]
-    public ActionResult<IReadOnlyList<string>> GetAll() =>
-        Ok(roleManager.Roles.OrderBy(role => role.Name).Select(role => role.Name!).ToList());
+    public async Task<ActionResult<PagedResult<string>>> GetAll(
+        [FromQuery] PagedRequest request,
+        CancellationToken cancellationToken)
+    {
+        var query = roleManager.Roles.OrderBy(role => role.Name);
+        var totalCount = await query.CountAsync(cancellationToken);
+        var roles = await query
+            .Skip((request.ValidatedPage - 1) * request.ValidatedPageSize)
+            .Take(request.ValidatedPageSize)
+            .Select(role => role.Name!)
+            .ToListAsync(cancellationToken);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)request.ValidatedPageSize);
+        return Ok(new PagedResult<string>(
+            request.ValidatedPage,
+            request.ValidatedPageSize,
+            totalCount,
+            totalPages,
+            roles));
+    }
 
     [HttpPost]
     public async Task<ActionResult> Create(CreateRoleDto dto, CancellationToken cancellationToken)

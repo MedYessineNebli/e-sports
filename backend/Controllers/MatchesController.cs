@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Roles = "Admin,Organizer")]
 [Route("api/matches")]
 public sealed class MatchesController(IMatchService service) : ControllerBase
 {
@@ -16,6 +16,14 @@ public sealed class MatchesController(IMatchService service) : ControllerBase
         [FromQuery] int? tournamentId,
         CancellationToken cancellationToken) =>
         service.GetPagedAsync(request, tournamentId, cancellationToken);
+
+    [HttpGet("results")]
+    [Authorize(Roles = "Admin,Organizer,Player")]
+    public Task<PagedResult<MatchResponseDto>> GetResults(
+        [FromQuery] PagedRequest request,
+        [FromQuery] int? tournamentId,
+        CancellationToken cancellationToken) =>
+        service.GetCompletedPagedAsync(request, tournamentId, cancellationToken);
 
     [HttpGet("{id:int}")]
     public async Task<ActionResult<MatchResponseDto>> GetById(int id, CancellationToken cancellationToken)

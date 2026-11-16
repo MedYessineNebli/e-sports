@@ -8,7 +8,7 @@ using MediatR;
 namespace API.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Roles = "Admin,Organizer")]
 [Route("api/games")]
 public sealed class GamesController(IGameService service, ISender sender) : ControllerBase
 {

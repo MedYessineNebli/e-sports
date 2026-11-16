@@ -26,7 +26,11 @@ GET {{baseUrl}}/api/games?page=1&pageSize=10
 Authorization: Bearer {{token}}
 
 ### List users (Admin)
-GET {{baseUrl}}/api/users
+GET {{baseUrl}}/api/users?page=1&pageSize=10
+Authorization: Bearer {{token}}
+
+### List roles (Admin)
+GET {{baseUrl}}/api/roles?page=1&pageSize=10
 Authorization: Bearer {{token}}
 
 ### Get a user (Admin)

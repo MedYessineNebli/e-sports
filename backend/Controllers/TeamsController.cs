@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Roles = "Admin,Organizer")]
 [Route("api/teams")]
 public sealed class TeamsController(ITeamService service, IPlayerService playerService) : ControllerBase
 {

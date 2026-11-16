@@ -15,10 +15,14 @@ public sealed class UsersController(
     RoleManager<IdentityRole> roleManager) : ControllerBase
 {
     [HttpGet]
-    public async Task<ActionResult<IReadOnlyList<UserResponse>>> GetAll(CancellationToken cancellationToken)
+    public async Task<ActionResult<PagedResult<UserResponse>>> GetAll(
+        [FromQuery] PagedRequest request,
+        CancellationToken cancellationToken)
     {
         var users = await userManager.Users
             .OrderBy(user => user.UserName)
+            .Skip((request.ValidatedPage - 1) * request.ValidatedPageSize)
+            .Take(request.ValidatedPageSize)
             .ToListAsync(cancellationToken);
         var responses = new List<UserResponse>(users.Count);
 
@@ -28,7 +32,14 @@ public sealed class UsersController(
             responses.Add(ToResponse(user, await userManager.GetRolesAsync(user)));
         }
 
-        return Ok(responses);
+        var totalCount = await userManager.Users.CountAsync(cancellationToken);
+        var totalPages = (int)Math.Ceiling(totalCount / (double)request.ValidatedPageSize);
+        return Ok(new PagedResult<UserResponse>(
+            request.ValidatedPage,
+            request.ValidatedPageSize,
+            totalCount,
+            totalPages,
+            responses));
     }
 
     [HttpGet("{id}")]

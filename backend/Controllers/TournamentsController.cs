@@ -32,6 +32,7 @@ public sealed class TournamentsController(
     }
 
     [HttpGet("{id:int}/registrations")]
+    [Authorize(Roles = "Admin,Organizer")]
     public Task<PagedResult<RegistrationResponseDto>> GetRegistrations(
         int id,
         [FromQuery] PagedRequest request,
@@ -39,6 +40,7 @@ public sealed class TournamentsController(
         registrationService.GetPagedAsync(request, id, null, cancellationToken);
 
     [HttpGet("{id:int}/matches")]
+    [Authorize(Roles = "Admin,Organizer")]
     public Task<PagedResult<MatchResponseDto>> GetMatches(
         int id,
         [FromQuery] PagedRequest request,

@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 namespace API.Controllers;
 
 [ApiController]
-[Authorize]
+[Authorize(Roles = "Admin,Organizer")]
 [Route("api/players")]
 public sealed class PlayersController(IPlayerService service) : ControllerBase
 {

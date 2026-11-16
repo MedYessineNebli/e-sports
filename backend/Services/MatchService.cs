@@ -14,6 +14,15 @@ public sealed class MatchService(IUnitOfWork unitOfWork) : IMatchService
         return new(page, pageSize, totalCount, GetTotalPages(totalCount, pageSize), items.Select(ToResponse).ToList());
     }
 
+    public async Task<PagedResult<MatchResponseDto>> GetCompletedPagedAsync(PagedRequest request, int? tournamentId, CancellationToken cancellationToken)
+    {
+        var page = request.ValidatedPage;
+        var pageSize = request.ValidatedPageSize;
+        var totalCount = await unitOfWork.Matches.CountCompletedAsync(tournamentId, cancellationToken);
+        var items = await unitOfWork.Matches.GetCompletedPagedAsync(page, pageSize, tournamentId, cancellationToken);
+        return new(page, pageSize, totalCount, GetTotalPages(totalCount, pageSize), items.Select(ToResponse).ToList());
+    }
+
     public async Task<MatchResponseDto?> GetByIdAsync(int id, CancellationToken cancellationToken)
     {
         var match = await unitOfWork.Matches.GetByIdAsync(id, true, true, cancellationToken);
